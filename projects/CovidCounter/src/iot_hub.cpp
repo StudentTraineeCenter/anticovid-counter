@@ -10,13 +10,13 @@
 #define MESSAGE_MAX_LEN 256
 
 // Please input the SSID and password of WiFi
-const char* ssid     = "nazev_wifi";
-const char* password = "heslo_wifi";
+const char* ssid     = "Don Pedros phone";
+const char* password = "Spojilaci123";
 
 /*String containing Hostname, Device Id & Device Key in the format:                         */
 /*  "HostName=<host_name>;DeviceId=<device_id>;SharedAccessKey=<device_key>"                */
 /*  "HostName=<host_name>;DeviceId=<device_id>;SharedAccessSignature=<device_sas_token>"    */
-static const char* connectionString = "string k pripojeni";
+static const char* connectionString = "HostName=CovidCounter.azure-devices.net;DeviceId=ESP32-CAM;SharedAccessKey=QxtYp8VVHWJBPiDk1DMvu3JXDqleZhgCl/GF40NmZaQ=";
 
 const char *messageData = "{\"deviceId\":\"%s\", \"messageId\":%d, \"Temperature\":%f, \"Humidity\":%f}";
 
