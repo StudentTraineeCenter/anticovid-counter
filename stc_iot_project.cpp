@@ -5,9 +5,9 @@
 //#include "soc/soc.h"
 //#include "soc/rtc_cntl_reg.h"
 #include "esp_camera.h"
-
 #include "AzureIotHub.h"
 #include "Esp32MQTTClient.h"
+
 
 //CREDENTIALS
 const char* ssid = "UPC91D2DDF";
@@ -35,7 +35,7 @@ int messageCount = 1;
 static bool hasWifi = false;
 static bool messageSending = true;
 static uint64_t send_interval_ms;
-  
+ 
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM      0
@@ -53,6 +53,7 @@ static uint64_t send_interval_ms;
 #define VSYNC_GPIO_NUM    25
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //AZURE IOT HUB UTILS
@@ -131,6 +132,7 @@ static int  DeviceMethodCallback(const char *methodName, const unsigned char *pa
 
 //ESP_CAM UTILS
 void configInitCamera(){
+  
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -172,9 +174,20 @@ void configInitCamera(){
     ESP.restart();
   }
 
-  // Drop down frame size for higher initial frame rate
   sensor_t * s = esp_camera_sensor_get();
-  s->set_framesize(s, FRAMESIZE_CIF);  // UXGA|SXGA|XGA|SVGA|VGA|CIF|QVGA|HQVGA|QQVGA
+  // initial sensors are flipped vertically and colors are a bit saturated
+  if (s->id.PID == OV3660_PID) {
+    s->set_vflip(s, 1); // flip it back
+    s->set_brightness(s, 1); // up the brightness just a bit
+    s->set_saturation(s, -2); // lower the saturation
+  }
+  // drop down frame size for higher initial frame rate
+  s->set_framesize(s, FRAMESIZE_QVGA);
+
+#if defined(CAMERA_MODEL_M5STACK_WIDE) || defined(CAMERA_MODEL_M5STACK_ESP32CAM)
+  s->set_vflip(s, 1);
+  s->set_hmirror(s, 1);
+#endif
 }
 
 //SKETCH
@@ -194,7 +207,7 @@ void setup(){
   {
     return;
   }
-  randomSeed(analogRead(0));
+  //randomSeed(analogRead(0));
 
   Serial.println(" > IoT Hub");
   Esp32MQTTClient_SetOption(OPTION_MINI_SOLUTION_NAME, "GetStarted");
@@ -213,9 +226,10 @@ void setup(){
 }
 
 void loop(){
+  /*
   runtime = millis();
 
-
+  
   if(hasWifi){
     if(runtime - last_capture >= capture_delay){
         
@@ -224,7 +238,7 @@ void loop(){
       camera_fb_t * fb = NULL;
       
       fb = esp_camera_fb_get();
-        
+    
       if(!fb){ //checking if it was succesful
         Serial.println("Camera capture failed");
         return;
@@ -245,6 +259,30 @@ void loop(){
       
   } else {
     Esp32MQTTClient_Check();
-  }   
+  }
+  */   
+        //capturing the image and sending it to iot hub
+      
+      camera_fb_t * fb = NULL;
+      
+      fb = esp_camera_fb_get();
+      delay(50000);
+      Serial.println("ahoj");
+      
+      if(!fb){ //checking if it was succesful
+        Serial.println("Camera capture failed");
+        return;
+      } 
+      //const char *data = (const char *)fb->buf;
+      uint8_t *fbBuf = fb->buf;
+      size_t fbLen = fb->len;
+
+      char messagePayload[MESSAGE_MAX_LEN];
+      snprintf(messagePayload, MESSAGE_MAX_LEN, messageData, DEVICE_ID, messageCount++, fbLen, *fbBuf);
+      Serial.println(messagePayload);
+      EVENT_INSTANCE* message = Esp32MQTTClient_Event_Generate(messagePayload, MESSAGE);
+      Esp32MQTTClient_Event_AddProp(message, "SendingPhoto...", "true");
+      Esp32MQTTClient_SendEventInstance(message);
+      
 }
   
