@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include "Logger.h"
+
 void loge(String message)
 {
     Serial.println("ERROR: " + message);
