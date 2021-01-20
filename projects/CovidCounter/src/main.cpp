@@ -5,6 +5,9 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include "Esp32MQTTClient.h"
+#include "esp_camera.h"
+
+// #include "camera.cpp"
 
 // Please input the SSID and password of WiFi
 const char *ssid = "Don Pedros phone";
@@ -39,11 +42,13 @@ void setup()
     return;
   }
   hasIoTHub = true;
+  // camera_setup();
 }
 
 void loop()
 {
   Serial.println("start sending events.");
+
   if (hasIoTHub)
   {
     char buff[128];
