@@ -5,6 +5,9 @@
 #include <AzureIoTHub.h>
 #include "Esp32MQTTClient.h"
 #include <Logger.h>
+#include <ArduinoJson.h>
+#include <CameraHelper.h>
+#include "map"
 
 #define MESSAGE_MAX_LEN 256
 #define DEVICE_NAME "ESP32CAM"
@@ -14,18 +17,22 @@ class AzureHelper {
         unsigned long INTERVAL; 
         const char *messageData;
         unsigned long messageCount;
+        const char *connectString;
 
     public:
         static bool isBusy;
-        int lastSendMicros;
+        unsigned long lastSendMicros;
 
         AzureHelper();
         bool init(const char *connectionString);
         void setInterval(unsigned long newInterval);
 
         bool isAfterInterval();
-        bool sendTestMsg();
+        bool sendMessagePhoto(CameraHelper *camera);
+        bool sendMessagePhoto(CameraHelper *camera, const std::map<String, String>& jsonData);
         void check();
+
+        void uploadToBlob();
 
         static void SendConfirmationCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result);
         static void MessageCallback(const char *payLoad, int size);
