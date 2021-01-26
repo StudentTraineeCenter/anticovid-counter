@@ -6,3 +6,4 @@
 include/secrets.h
 src/anticovidcounter.code-workspace
 cmake-build-esp32cam/
+.idea
