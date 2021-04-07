@@ -46,27 +46,14 @@ void loop() {
         initWifi();
 
     if(camera->capture()){
-        auto photo = camera->lastCapture;
-        uint8_t *fbBuf = photo->buf;
-        for (size_t n = 0; n < photo->len; n = n + 1024) {
-        if (n + 1024 < photo->len) {
-            Serial.write(fbBuf, 1024);
-            fbBuf += 1024;
-        } else if (photo->len % 1024 > 0) {
-            size_t remainder = photo->len % 1024;
-            Serial.write(fbBuf, remainder);
-        }
-    }
-        logd(String(*photo->buf));
         if (azure->sendMessagePhoto(camera)) {
-
+            // Yay!
         } else {
             azure->check();
         }
-
-        camera->clean();
-
+        logd("Captured");
     }
+    camera->clean();
 
     delay(5000);
 }

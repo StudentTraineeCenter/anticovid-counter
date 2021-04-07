@@ -8,9 +8,25 @@
 #include <ArduinoJson.h>
 #include <CameraHelper.h>
 #include "map"
+#include <stdio.h>
 
 #define MESSAGE_MAX_LEN 256
 #define DEVICE_NAME "ESP32CAM"
+
+struct SpiRamAllocator {
+    static void* allocate(size_t size) {
+        return heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+    }
+
+    static void deallocate(void* pointer) {
+        heap_caps_free(pointer);
+    }
+
+    static void* reallocate(void* ptr, size_t new_size) {
+        return heap_caps_realloc(ptr, new_size, MALLOC_CAP_SPIRAM);
+    }
+};
+using SpiRamJsonDocument = ArduinoJson6172_91::BasicJsonDocument<SpiRamAllocator>;
 
 class AzureHelper {
     private:
@@ -31,8 +47,6 @@ class AzureHelper {
         bool sendMessagePhoto(CameraHelper *camera);
         bool sendMessagePhoto(CameraHelper *camera, const std::map<String, String>& jsonData);
         void check();
-
-        void uploadToBlob();
 
         static void SendConfirmationCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result);
         static void MessageCallback(const char *payLoad, int size);

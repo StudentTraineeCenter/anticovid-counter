@@ -7,14 +7,14 @@
 
 #include <Arduino.h>
 #include <Logger.h>
-#include "CameraHelper.h"
 #include "esp_camera.h"
-#include <sstream>
-//#include "FS.h"                // SD Card ESP32
-//#include "SD_MMC.h"            // SD Card ESP32
 #include "soc/soc.h"           // Disable brownout problems
 #include "soc/rtc_cntl_reg.h"  // Disable brownout problems
 #include "driver/rtc_io.h"
+#include <cstring>
+//#include "FS.h"                // SD Card ESP32
+//#include "SD_MMC.h"            // SD Card ESP32
+
 
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
@@ -46,21 +46,15 @@ public:
 
     bool init();
 
-    void begin();
-
     bool capture();
 
-    bool isPhotoCaptured();
+    bool isPhotoCaptured() const;
 
-    camera_fb_t getPhoto();
+    camera_fb_t getPhoto() const;
 
-    uint8_t getPhotoRaw();
+    void clean() const;
 
-    String getPhotoAsString();
-
-    String getPhotoFormat();
-
-    void clean();
+    const char* getPhotoGrayscaleString() const;
 };
 
 #endif //ANTICOVIDPEOPLECOUNTER_CAMERAHELPER_H

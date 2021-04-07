@@ -50,7 +50,7 @@ using namespace std;
 using namespace placeholders;
 #endif
 
-#include <TimeLib.h>
+#include <Time.h>
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"

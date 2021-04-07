@@ -4,24 +4,19 @@
 
 #include "CameraHelper.h"
 
+/**
+ * General constructor
+ * */
 CameraHelper::CameraHelper() {
     s = nullptr;
     lastCapture = nullptr;
     logi("CameraHelper initialization...");
     setPins();
-    if (psramFound()) {
-        logd("PSRAM found", 1);
-        config.frame_size = FRAMESIZE_UXGA; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
-        config.jpeg_quality = 10; //10-63 lower number means higher quality
-        config.fb_count = 2;
-    } else {
-        logd("PSRAM NOT found", 1);
-        config.frame_size = FRAMESIZE_SVGA;
-        config.jpeg_quality = 12;
-        config.fb_count = 1;
-    }
 }
 
+/**
+ * Initialization function of the CameraHelper
+ * */
 bool CameraHelper::init() {
     esp_err_t err = esp_camera_init(&config);
     if (err != ESP_OK) {
@@ -32,35 +27,9 @@ bool CameraHelper::init() {
     return true;
 }
 
-void CameraHelper::begin() {
-    logi("Setting camera parameters...");
-    s = esp_camera_sensor_get();
-    s->set_brightness(s, 0);     // -2 to 2
-    s->set_contrast(s, 0);       // -2 to 2
-    s->set_saturation(s, 0);     // -2 to 2
-    s->set_special_effect(s,
-                          0); // 0 to 6 (0 - No Effect, 1 - Negative, 2 - Grayscale, 3 - Red Tint, 4 - Green Tint, 5 - Blue Tint, 6 - Sepia)
-    s->set_whitebal(s, 1);       // 0 = disable , 1 = enable
-    s->set_awb_gain(s, 1);       // 0 = disable , 1 = enable
-    s->set_wb_mode(s, 0);        // 0 to 4 - if awb_gain enabled (0 - Auto, 1 - Sunny, 2 - Cloudy, 3 - Office, 4 - Home)
-    s->set_exposure_ctrl(s, 1);  // 0 = disable , 1 = enable
-    s->set_aec2(s, 0);           // 0 = disable , 1 = enable
-    s->set_ae_level(s, 0);       // -2 to 2
-    s->set_aec_value(s, 300);    // 0 to 1200
-    s->set_gain_ctrl(s, 1);      // 0 = disable , 1 = enable
-    s->set_agc_gain(s, 0);       // 0 to 30
-    s->set_gainceiling(s, (gainceiling_t) 0);  // 0 to 6
-    s->set_bpc(s, 0);            // 0 = disable , 1 = enable
-    s->set_wpc(s, 1);            // 0 = disable , 1 = enable
-    s->set_raw_gma(s, 1);        // 0 = disable , 1 = enable
-    s->set_lenc(s, 1);           // 0 = disable , 1 = enable
-    s->set_hmirror(s, 0);        // 0 = disable , 1 = enable
-    s->set_vflip(s, 0);          // 0 = disable , 1 = enable
-    s->set_dcw(s, 1);            // 0 = disable , 1 = enable
-    s->set_colorbar(s, 0);       // 0 = disable , 1 = enable
-    logi("Done", 1);
-}
-
+/**
+ * Tries to capture the photo and save it to the lastCapture
+ * */
 bool CameraHelper::capture() {
     logi("Capturing photo...");
     lastCapture = nullptr;
@@ -73,46 +42,50 @@ bool CameraHelper::capture() {
     return true;
 }
 
-bool CameraHelper::isPhotoCaptured() {
+/**
+ * Returns whether photo is captured and in memory
+ * */
+bool CameraHelper::isPhotoCaptured() const {
     return lastCapture != nullptr || !lastCapture;
 }
 
-camera_fb_t CameraHelper::getPhoto() {
+/**
+ * Returns raw photo
+ * */
+camera_fb_t CameraHelper::getPhoto() const {
     return *lastCapture;
 }
 
-uint8_t CameraHelper::getPhotoRaw() {
-    return *lastCapture->buf;
+/**
+ * Returns string of grayscale values converted to chars
+ * Uses PSRAM instead of ordinary RAM
+ * */
+const char* CameraHelper::getPhotoGrayscaleString() const {
+    uint8_t *buf = lastCapture->buf;
+    size_t len = lastCapture->len;
+
+    auto *str = (char*) ps_malloc(sizeof(char)*(len-1));
+
+    for (size_t i = 0; i < len; i++){
+        int cI = static_cast<int>(*(buf + i));
+        str[i] = static_cast<char>(cI == 0 ? 1 : cI);
+    }
+
+    return str;
 }
 
-String CameraHelper::getPhotoAsString() {
-//    uint8_t *fbBuf = lastCapture->buf;
-//    size_t fbLen = lastCapture->len;
-//    std::stringstream ss;
-//    for (size_t n = 0; n < fbLen; n = n + 1024) {
-//        if (n + 1024 < fbLen) {
-//            ss << fbBuf[n];
-//            Serial.write(fbBuf, 1024);
-//            fbBuf += 1024;
-//        } else if (fbLen % 1024 > 0) {
-//            size_t remainder = fbLen % 1024;
-//            client.write(fbBuf, remainder);
-//        }
-//        Serial.write(fbBuf,fbLen);
-//    }
-    return String(*((char *) lastCapture->buf));
-}
-
-String CameraHelper::getPhotoFormat() {
-    return String(lastCapture->format);
-}
-
-void CameraHelper::clean() {
+/**
+ * Returns frame to camera, needed after image processing completed
+ * */
+void CameraHelper::clean() const {
     logi("Resetting camera...");
     esp_camera_fb_return(lastCapture);
     logi("Done", 1);
 }
 
+/**
+ * Initialization of pins
+ * */
 void CameraHelper::setPins() {
     logi("Setting PINs", 1);
     config.ledc_channel = LEDC_CHANNEL_0;
@@ -133,7 +106,16 @@ void CameraHelper::setPins() {
     config.pin_sscb_scl = SIOC_GPIO_NUM;
     config.pin_pwdn = PWDN_GPIO_NUM;
     config.pin_reset = RESET_GPIO_NUM;
-    config.xclk_freq_hz = 20000000;
-    config.pixel_format = PIXFORMAT_JPEG; //YUV422,GRAYSCALE,RGB565,JPEG
+
+    // Only support 10 MHz current. Camera will output bad image when XCLK is 20 MHz.
+    config.xclk_freq_hz = 10000000;
+
+    config.pixel_format = PIXFORMAT_GRAYSCALE;
+
+    config.frame_size = FRAMESIZE_QVGA; // 320x240
+    // config.jpeg_quality = 40; // used for JPEG only
+
+    config.fb_count = 1;
+
     logi("Done", 2);
 }

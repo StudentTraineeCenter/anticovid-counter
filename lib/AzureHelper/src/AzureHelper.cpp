@@ -1,4 +1,4 @@
-#include <map>
+#include <time.h>
 #include "AzureHelper.h"
 
 bool AzureHelper::isBusy = false;
@@ -46,23 +46,28 @@ bool AzureHelper::sendMessagePhoto(CameraHelper *camera, const std::map<String, 
             loge("Photo not captured, yet", 1);
             return false;
         }
-        DynamicJsonDocument doc = DynamicJsonDocument(1024);
-        doc["deviceId"] = DEVICE_NAME;
-        doc["messageId"] = String(messageCount++).c_str();
-        doc["hasPhoto"] = "true";
-        doc["photo"]["data"] = camera->getPhotoAsString().c_str();
-        doc["photo"]["format"] = camera->getPhotoFormat().c_str();
 
-        Serial.println(camera->getPhotoAsString());
+        int jsonDocumentSize = 252000*sizeof(char); // 252 kB
+        SpiRamJsonDocument doc(jsonDocumentSize);
+        doc["deviceId"] = DEVICE_NAME;
+        doc["messageId"] = messageCount++;
+        doc["hasPhoto"] = "true";
+        doc["photo"]["data"] = camera->getPhotoGrayscaleString();
+        doc["photo"]["format"] = String(camera->getPhoto().format).c_str();
+
         for (const auto &it : jsonData)
             doc[it.first.c_str()] = it.second.c_str();
 
-        String msg;
-        serializeJson(doc, msg);
-        logd(String(msg), 1);
+        logd(String(ESP.getFreePsram()));
+        logd(String(static_cast<long>(doc.size())));
+        logd(String(static_cast<long>(sizeof(doc))));
+        char *buffer = (char *) ps_malloc (254000 * sizeof (char));
 
-        EVENT_INSTANCE *message = Esp32MQTTClient_Event_Generate(msg.c_str(), MESSAGE);
-        Esp32MQTTClient_Event_AddProp(message, "test", "false");
+        serializeJson(doc, buffer, jsonDocumentSize);
+
+        logd(buffer);
+
+        EVENT_INSTANCE *message = Esp32MQTTClient_Event_Generate(buffer, MESSAGE);
 
         if (Esp32MQTTClient_SendEventInstance(message)) {
             lastSendMicros = micros();
@@ -80,10 +85,6 @@ bool AzureHelper::sendMessagePhoto(CameraHelper *camera, const std::map<String, 
 void AzureHelper::check() {
     Esp32MQTTClient_Check();
 }
-
-void AzureHelper::uploadToBlob() {
-}
-
 
 void AzureHelper::SendConfirmationCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result) {
     if (result == IOTHUB_CLIENT_CONFIRMATION_OK) {

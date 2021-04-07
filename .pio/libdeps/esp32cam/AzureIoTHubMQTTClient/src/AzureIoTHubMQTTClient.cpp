@@ -7,7 +7,7 @@
 #include "sha256.h"
 #include "Base64.h"
 #include "Utils.h"
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 
 AzureIoTHubMQTTClient::AzureIoTHubMQTTClient(Client& c, String iotHubHostName, String deviceId, String deviceKey):
         iotHubHostName_(iotHubHostName), deviceId_(deviceId), deviceKey_(deviceKey), PubSubClient(c, iotHubHostName, AZURE_IOTHUB_MQTT_PORT) {
