@@ -1,14 +1,12 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. 
-
 #include <Arduino.h>
 #include <Secrets.h>
 #include <WiFiClientSecure.h>
-#include <AzureIoTSocket_WiFi.h>
-#include <AzureIotHub.h>
 #include <Logger.h>
 #include "AzureHelper.h"
+#include <AzureIoTSocket_WiFi.h>
+#include <AzureIotHub.h>
 #include "CameraHelper.h"
+#include <stdio.h>
 
 #define BAUD_RATE 115200
 
@@ -33,8 +31,8 @@ void setup() {
     if (!initWifi())
         return;
     azure = new AzureHelper();
-    if (!azure->init(CONNECTION_STRING))
-        return;
+    azure->init(CONNECTION_STRING);
+    //azure->init(CONNECTION_STRING, SAS_TOKEN, ROOT_CA, DEVICE_NAME, IOTHUB);
     camera = new CameraHelper();
     if (!camera->init())
         return;
@@ -44,16 +42,12 @@ void setup() {
 void loop() {
     if (WiFiClass::status() != WL_CONNECTED)
         initWifi();
-
-    if(camera->capture()){
+    if (camera->capture() && WiFi.isConnected()) {
         if (azure->sendMessagePhoto(camera)) {
-            // Yay!
-        } else {
-            azure->check();
+            logd("Photo sent!");
         }
         logd("Captured");
     }
-    camera->clean();
 
     delay(5000);
 }

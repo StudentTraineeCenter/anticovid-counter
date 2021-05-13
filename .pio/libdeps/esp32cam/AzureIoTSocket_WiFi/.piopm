@@ -1,1 +1,1 @@
-{"type": "library", "name": "AzureIoTSocket_WiFi", "version": "1.0.1", "spec": {"owner": "azure", "id": 11479, "name": "AzureIoTSocket_WiFi", "requirements": null, "url": null}}
+{"type": "library", "name": "AzureIoTSocket_WiFi", "version": "1.0.2", "spec": {"owner": "azure", "id": 11479, "name": "AzureIoTSocket_WiFi", "requirements": null, "url": null}}

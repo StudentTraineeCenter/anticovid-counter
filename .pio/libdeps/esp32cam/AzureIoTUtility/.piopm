@@ -1,1 +1,1 @@
-{"type": "library", "name": "AzureIoTUtility", "version": "1.5.0", "spec": {"owner": "azure", "id": 1277, "name": "AzureIoTUtility", "requirements": null, "url": null}}
+{"type": "library", "name": "AzureIoTUtility", "version": "1.6.1", "spec": {"owner": "azure", "id": 1277, "name": "AzureIoTUtility", "requirements": null, "url": null}}

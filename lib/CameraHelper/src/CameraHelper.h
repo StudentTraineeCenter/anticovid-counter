@@ -12,6 +12,12 @@
 #include "soc/rtc_cntl_reg.h"  // Disable brownout problems
 #include "driver/rtc_io.h"
 #include <cstring>
+
+extern "C" {
+#include "libb64/cdecode.h"
+#include "libb64/cencode.h"
+}
+#include <base64.h>
 //#include "FS.h"                // SD Card ESP32
 //#include "SD_MMC.h"            // SD Card ESP32
 
@@ -41,20 +47,16 @@ private:
     camera_config_t config{};
 
 public:
+    String resolution;
     camera_fb_t *lastCapture;
     CameraHelper();
-
     bool init();
-
     bool capture();
-
     bool isPhotoCaptured() const;
-
     camera_fb_t getPhoto() const;
-
     void clean() const;
-
-    const char* getPhotoGrayscaleString() const;
+    const char* getPhotoGrayscaleString();
+    const char* getPhotoGrayscaleAsBase64();
 };
 
 #endif //ANTICOVIDPEOPLECOUNTER_CAMERAHELPER_H

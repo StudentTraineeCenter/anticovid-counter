@@ -1,7 +1,3 @@
-//
-// Created by Jakub on 20-Jan-21.
-//
-
 #include "CameraHelper.h"
 
 /**
@@ -60,17 +56,16 @@ camera_fb_t CameraHelper::getPhoto() const {
  * Returns string of grayscale values converted to chars
  * Uses PSRAM instead of ordinary RAM
  * */
-const char* CameraHelper::getPhotoGrayscaleString() const {
+const char *CameraHelper::getPhotoGrayscaleString() {
     uint8_t *buf = lastCapture->buf;
     size_t len = lastCapture->len;
 
-    auto *str = (char*) ps_malloc(sizeof(char)*(len-1));
+    auto *str = (char *) ps_malloc(sizeof(char) * (len - 1));
 
-    for (size_t i = 0; i < len; i++){
+    for (size_t i = 0; i < len; i++) {
         int cI = static_cast<int>(*(buf + i));
         str[i] = static_cast<char>(cI == 0 ? 1 : cI);
     }
-
     return str;
 }
 
@@ -81,6 +76,28 @@ void CameraHelper::clean() const {
     logi("Resetting camera...");
     esp_camera_fb_return(lastCapture);
     logi("Done", 1);
+}
+
+/**
+ * Returns string of grayscale values converted to chars and encodes as BASE64
+ * Uses PSRAM instead of ordinary RAM
+ *
+ * base64 lib: https://github.com/Densaugeo/base64_arduino
+ * */
+const char *CameraHelper::getPhotoGrayscaleAsBase64() {
+    uint8_t *buf = lastCapture->buf;
+    size_t len = lastCapture->len;
+
+    // Following code comes from base64.cpp in Arduino lib, but edited for PSRAM use...
+    size_t size = base64_encode_expected_len(len) + 1;
+    char *base64Str = (char *) ps_malloc(size);
+    if (base64Str) {
+        base64_encodestate _state;
+        base64_init_encodestate(&_state);
+        int base64Len = base64_encode_block((const char *) &buf[0], len, &base64Str[0], &_state);
+        base64Len = base64_encode_blockend((base64Str + base64Len), &_state);
+        return base64Str;
+    } else return "";
 }
 
 /**
@@ -112,7 +129,8 @@ void CameraHelper::setPins() {
 
     config.pixel_format = PIXFORMAT_GRAYSCALE;
 
-    config.frame_size = FRAMESIZE_QVGA; // 320x240
+    config.frame_size = FRAMESIZE_QQVGA; // 320x240, QVGA
+    resolution = "240x240";
     // config.jpeg_quality = 40; // used for JPEG only
 
     config.fb_count = 1;

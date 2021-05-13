@@ -47,13 +47,13 @@ bool AzureHelper::sendMessagePhoto(CameraHelper *camera, const std::map<String, 
             return false;
         }
 
-        int jsonDocumentSize = 252000*sizeof(char); // 252 kB
+        int jsonDocumentSize = 255000*sizeof(char); // 252 kB
         SpiRamJsonDocument doc(jsonDocumentSize);
         doc["deviceId"] = DEVICE_NAME;
         doc["messageId"] = messageCount++;
         doc["hasPhoto"] = "true";
-        doc["photo"]["data"] = camera->getPhotoGrayscaleString();
-        doc["photo"]["format"] = String(camera->getPhoto().format).c_str();
+        doc["photo"]["data"] = camera->getPhotoGrayscaleAsBase64();
+        doc["photo"]["format"] = camera->resolution;
 
         for (const auto &it : jsonData)
             doc[it.first.c_str()] = it.second.c_str();
@@ -61,7 +61,7 @@ bool AzureHelper::sendMessagePhoto(CameraHelper *camera, const std::map<String, 
         logd(String(ESP.getFreePsram()));
         logd(String(static_cast<long>(doc.size())));
         logd(String(static_cast<long>(sizeof(doc))));
-        char *buffer = (char *) ps_malloc (254000 * sizeof (char));
+        char *buffer = (char *) ps_malloc (255200 * sizeof (char));
 
         serializeJson(doc, buffer, jsonDocumentSize);
 
