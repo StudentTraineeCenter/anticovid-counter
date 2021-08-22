@@ -9,6 +9,7 @@
 #include <CameraHelper.h>
 #include "map"
 #include <stdio.h>
+#include <string.h>
 
 #define MESSAGE_MAX_LEN 256
 #define DEVICE_NAME "ESP32CAM"
@@ -31,7 +32,6 @@ using SpiRamJsonDocument = ArduinoJson6172_91::BasicJsonDocument<SpiRamAllocator
 class AzureHelper {
 private:
     unsigned long INTERVAL;
-    const char *messageData;
     unsigned long messageCount;
     const char *connectString;
 

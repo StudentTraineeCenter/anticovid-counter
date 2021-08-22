@@ -88,16 +88,34 @@ const char *CameraHelper::getPhotoGrayscaleAsBase64() {
     uint8_t *buf = lastCapture->buf;
     size_t len = lastCapture->len;
 
+    size_t squareLen = resolution_y * resolution_y;
+
+    auto squareBuf = (uint8_t*) ps_malloc(squareLen);
+
+    int offset = (resolution_x - resolution_y)/2;
+    int index = 0;
+    for (int i = 0; i < len; i++) {
+        int m = i % resolution_x;
+        if (m < offset || m >= (offset + resolution_y))
+            continue;
+        else {
+            squareBuf[index++] = static_cast<int>(*(buf + i));
+        }
+    }
+    logd("Pixels: " + String(index));
+
+    logd(String(static_cast<int>(sizeof(squareBuf))));
     // Following code comes from base64.cpp in Arduino lib, but edited for PSRAM use...
-    size_t size = base64_encode_expected_len(len) + 1;
+    size_t size = base64_encode_expected_len(squareLen) + 1;
     char *base64Str = (char *) ps_malloc(size);
     if (base64Str) {
         base64_encodestate _state;
         base64_init_encodestate(&_state);
-        int base64Len = base64_encode_block((const char *) &buf[0], len, &base64Str[0], &_state);
+        int base64Len = base64_encode_block((const char *) &squareBuf[0], squareLen, &base64Str[0], &_state);
         base64Len = base64_encode_blockend((base64Str + base64Len), &_state);
+        Serial.println(base64Str);
         return base64Str;
-    } else return "";
+    } else return nullptr;
 }
 
 /**
@@ -129,8 +147,10 @@ void CameraHelper::setPins() {
 
     config.pixel_format = PIXFORMAT_GRAYSCALE;
 
-    config.frame_size = FRAMESIZE_QQVGA; // 320x240, QVGA
-    resolution = "240x240";
+    config.frame_size = FRAMESIZE_96X96; // 320x240, QVGA;; 480x320, HVGA
+    resolution_x = 96;
+    resolution_y = 96;
+    pixelsCount = 96*96;
     // config.jpeg_quality = 40; // used for JPEG only
 
     config.fb_count = 1;

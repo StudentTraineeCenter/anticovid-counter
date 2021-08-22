@@ -1,15 +1,22 @@
+// This file is based on Microsoft IoT Hub Demo and [https://github.com/petrkucerak/AzureCommunityDay][this repository].
+
 #include <time.h>
 #include "AzureHelper.h"
 
 bool AzureHelper::isBusy = false;
 
+/*
+ * Default constructor
+ */
 AzureHelper::AzureHelper() {
     INTERVAL = 10e6; // 10 sec
-    messageData = R"({"deviceId":"%s", "messageId":%d, "Temperature":%f, "Humidity":%f})";
     messageCount = 0;
     lastSendMicros = 0;
 }
 
+/*
+ * Initialization function - creates connection to Azure IoT Hub using Connection String
+ */
 bool AzureHelper::init(const char *connectionString) {
     logi("Connecting to Azure...");
     AzureHelper::connectString = connectionString;
@@ -26,18 +33,34 @@ bool AzureHelper::init(const char *connectionString) {
     return true;
 }
 
+/*
+ * Sets interval of sending photos
+ */
 void AzureHelper::setInterval(unsigned long newInterval) {
     INTERVAL = newInterval;
 }
 
+/*
+ * Checks if the set interval has elapsed
+ */
 bool AzureHelper::isAfterInterval() {
     return micros() - lastSendMicros >= INTERVAL;
 }
 
+/*
+ * Sends photo to Azure IoT Hub using MQTT protocol without optional Key-Value parameters
+ * @param camera: instance of CameraHelper using which the photo will be taken
+ */
 bool AzureHelper::sendMessagePhoto(CameraHelper *camera) {
     return AzureHelper::sendMessagePhoto(camera, std::map<String, String>());
 }
 
+/*
+ * Sends photo to Azure IoT Hub using MQTT protocol with optional Key-Value parameters
+ * @param camera: instance of CameraHelper using which the photo will be taken
+ * @param jsonData: map of Key-Value parameters which will be added to MQTT message
+ * @returns 'true' if the photo was successfully sent or 'false' if it wasn't
+ */
 bool AzureHelper::sendMessagePhoto(CameraHelper *camera, const std::map<String, String> &jsonData) {
     if (!isBusy && isAfterInterval()) {
         logi("Sending message to Azure...");
@@ -47,27 +70,35 @@ bool AzureHelper::sendMessagePhoto(CameraHelper *camera, const std::map<String, 
             return false;
         }
 
-        int jsonDocumentSize = 255000*sizeof(char); // 252 kB
+        auto photoData = camera->getPhotoGrayscaleAsBase64();
+        if(photoData == nullptr) {
+            loge("Base64 encoding not completed!");
+        }
+        int numOfSplits = 4;
+        int splitSize = camera->pixelsCount/numOfSplits;
+
+        int jsonDocumentSize = 252000*sizeof(char); // 252 kB
         SpiRamJsonDocument doc(jsonDocumentSize);
         doc["deviceId"] = DEVICE_NAME;
         doc["messageId"] = messageCount++;
         doc["hasPhoto"] = "true";
-        doc["photo"]["data"] = camera->getPhotoGrayscaleAsBase64();
-        doc["photo"]["format"] = camera->resolution;
+        doc["photo"]["resolution"] = camera->resolution_y;
+        doc["photo"]["data"] = photoData;
 
-        for (const auto &it : jsonData)
-            doc[it.first.c_str()] = it.second.c_str();
-
+//        for(int n = 0; n < numOfSplits; n++) {
+//            String propertyName = "data_" + String(n);
+//            doc["photo"][propertyName] = String(photoData).substring(0, splitSize).c_str();
+//        }
+        camera->clean();
         logd(String(ESP.getFreePsram()));
         logd(String(static_cast<long>(doc.size())));
         logd(String(static_cast<long>(sizeof(doc))));
-        char *buffer = (char *) ps_malloc (255200 * sizeof (char));
-
-        serializeJson(doc, buffer, jsonDocumentSize);
-
+        auto buffer = (char*) ps_malloc (252500 * sizeof (char));
+        char *x;
+        serializeJson(doc, x);
         logd(buffer);
 
-        EVENT_INSTANCE *message = Esp32MQTTClient_Event_Generate(buffer, MESSAGE);
+        EVENT_INSTANCE *message = Esp32MQTTClient_Event_Generate(x, MESSAGE);
 
         if (Esp32MQTTClient_SendEventInstance(message)) {
             lastSendMicros = micros();
@@ -82,21 +113,35 @@ bool AzureHelper::sendMessagePhoto(CameraHelper *camera, const std::map<String, 
     }
 }
 
+/*
+ * Checks for any callbacks (confirmation, cloud-to-device, message, device twin or device method)
+ */
 void AzureHelper::check() {
     Esp32MQTTClient_Check();
 }
 
+/*
+ * Callback method for confirmation of send
+ */
 void AzureHelper::SendConfirmationCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result) {
     if (result == IOTHUB_CLIENT_CONFIRMATION_OK) {
         logi("Send Confirmation Callback finished.");
     }
 }
 
+
+/*
+ * Callback method for messages
+ */
 void AzureHelper::MessageCallback(const char *payLoad, int size) {
     logi("Message callback:");
     logi(payLoad, 1);
 }
 
+
+/*
+ * Callback method for device twin messages
+ */
 void AzureHelper::DeviceTwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned char *payLoad, int size) {
     char *temp = (char *) malloc(size + 1);
     if (temp == nullptr) {
@@ -108,6 +153,10 @@ void AzureHelper::DeviceTwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const
     free(temp);
 }
 
+
+/*
+ * Callback method for device method
+ */
 int AzureHelper::DeviceMethodCallback(const char *methodName, const unsigned char *payload, int size,
                                       unsigned char **response, int *response_size) {
 

@@ -45,9 +45,11 @@ private:
 
     sensor_t *s;
     camera_config_t config{};
+    int resolution_x;
 
 public:
-    String resolution;
+    int resolution_y;
+    int pixelsCount;
     camera_fb_t *lastCapture;
     CameraHelper();
     bool init();

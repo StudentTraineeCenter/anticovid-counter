@@ -35,6 +35,7 @@ private:
     WiFiClient wifi;
     HTTPClient http;
 
+
 public:
     static bool isBusy;
     unsigned long lastSendMicros;
