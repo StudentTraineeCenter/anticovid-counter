@@ -1,0 +1,44 @@
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+  
+    <script>
+        /*
+        setInterval(                               //Periodically 
+          function()
+          {
+             $.getJSON(                            //Get some values from the server
+                $SCRIPT_ROOT + '/get_values',      // At this URL
+                {},                                // With no extra parameters
+                function(data)                     // And when you get a response
+                {
+                  $("#result").text(data.result);  // Write the results into the 
+                                                   // #result element
+                });
+          },
+          500);                                    // And do it every 500ms
+        */
+        
+        $(function(){
+            window.setInterval(function(){
+                loadNewMessage()
+            
+        }, 5000)
+        
+        function loadNewMessage(){
+            $.ajax({
+                url:"/update_message",
+                type: "POST",
+                dataType: "json",
+                success: function(data){
+                    $(message).replaceWith(data)
+                }
+            });
+        }
+        });
+        
+        </script>
+
+
+<div id="message" name="message">{{ message }}</div>
+<div><img src="image.png"></div>
+
+
