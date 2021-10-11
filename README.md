@@ -78,7 +78,8 @@ We have discussed what would be the most convenient way to encode photo to JSON 
 which could be then send via MQTT protocol.
 Azure IoT Hub limitation is 256 kB per message, which gives us theoretically option to send 500x500 px 
 grayscale photo, but as soon as we sent our first message was sent, we encountered a problem, 
-that the Azure IoT Hub will not decode the message or received at all.
+that the Azure IoT Hub will not decode the message or received at all. The photo is firstly converted to byte array, 
+which is then encoded with Base64 and included into JSON. 
 
 #### Troubleshooting
 When we get MQTT communication to work with lower photo resolution (97x97 px), another problem appeared because of the 
