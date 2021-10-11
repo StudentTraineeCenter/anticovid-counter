@@ -71,36 +71,75 @@ bool AzureHelper::sendMessagePhoto(CameraHelper *camera, const std::map<String, 
         }
 
         auto photoData = camera->getPhotoGrayscaleAsBase64();
-        if(photoData == nullptr) {
+        if (photoData == nullptr) {
             loge("Base64 encoding not completed!");
+            return false;
         }
-        int numOfSplits = 4;
-        int splitSize = camera->pixelsCount/numOfSplits;
+//        int numOfSplits = 4;
+//        int splitSize = photo.length() / numOfSplits;
+//        int jsonDocumentSize = 252000 * sizeof(char); // 252 kB
+//        SpiRamJsonDocument doc(jsonDocumentSize);
 
-        int jsonDocumentSize = 252000*sizeof(char); // 252 kB
-        SpiRamJsonDocument doc(jsonDocumentSize);
-        doc["deviceId"] = DEVICE_NAME;
-        doc["messageId"] = messageCount++;
-        doc["hasPhoto"] = "true";
-        doc["photo"]["resolution"] = camera->resolution_y;
-        doc["photo"]["data"] = photoData;
-
-//        for(int n = 0; n < numOfSplits; n++) {
-//            String propertyName = "data_" + String(n);
-//            doc["photo"][propertyName] = String(photoData).substring(0, splitSize).c_str();
+//        for (int n = 0; n < numOfSplits; n++) {
+//            String propertyName = String("photo") + String(n);
+//            if (n + 1 < numOfSplits) {
+//                doc[propertyName] = photo.substring(0 + (n * splitSize),
+//                                                                splitSize + (n * splitSize)).c_str();
+//            } else if (n + 1 == numOfSplits) {
+//                doc[propertyName] = photo.substring(0 + (n * splitSize),
+//                                                                splitSize + (n * splitSize) + 1).c_str();
+//            }
 //        }
+
+        int msgId = messageCount++;
+        DynamicJsonDocument doc1(1024);
+        doc1["deviceId"] = DEVICE_NAME;
+        doc1["messageId"] = msgId;
+        doc1["hasPhoto"] = "true";
+        doc1["photoRes"] = "96x96";
+        doc1["photo0"] = String(photoData).substring(0, 3100).c_str();
+
+        DynamicJsonDocument doc2(1024);
+        doc2["deviceId"] = DEVICE_NAME;
+        doc2["messageId"] = msgId;
+        doc2["hasPhoto"] = "true";
+        doc2["photoRes"] = "96x96";
+        doc2["photo1"] = String(photoData).substring(3100, 6200).c_str();
+
+        DynamicJsonDocument doc3(1024);
+        doc3["deviceId"] = DEVICE_NAME;
+        doc3["messageId"] = msgId;
+        doc3["hasPhoto"] = "true";
+        doc3["photoRes"] = "96x96";
+        doc3["photo2"] = String(photoData).substring(6200, 9300).c_str();
+
+        DynamicJsonDocument doc4(1024);
+        doc4["deviceId"] = DEVICE_NAME;
+        doc4["messageId"] = msgId;
+        doc4["hasPhoto"] = "true";
+        doc4["photoRes"] = "96x96";
+        doc4["photo3"] = String(photoData).substring(9300).c_str();
+
         camera->clean();
-        logd(String(ESP.getFreePsram()));
-        logd(String(static_cast<long>(doc.size())));
-        logd(String(static_cast<long>(sizeof(doc))));
-        auto buffer = (char*) ps_malloc (252500 * sizeof (char));
-        char *x;
-        serializeJson(doc, x);
-        logd(buffer);
+        logd("Free RAM: " + String(ESP.getFreeHeap()));
 
-        EVENT_INSTANCE *message = Esp32MQTTClient_Event_Generate(x, MESSAGE);
+        String msg1, msg2, msg3, msg4;
+        serializeJson(doc1, msg1);
+        serializeJson(doc2, msg2);
+        serializeJson(doc3, msg3);
+        serializeJson(doc4, msg4);
+        Serial.println(msg1.c_str());
+        Serial.println(msg2.c_str());
+        Serial.println(msg3.c_str());
+        Serial.println(msg4.c_str());
+        EVENT_INSTANCE *message1 = Esp32MQTTClient_Event_Generate(msg1.c_str(), MESSAGE);
+        EVENT_INSTANCE *message2 = Esp32MQTTClient_Event_Generate(msg2.c_str(), MESSAGE);
+        EVENT_INSTANCE *message3 = Esp32MQTTClient_Event_Generate(msg3.c_str(), MESSAGE);
+        EVENT_INSTANCE *message4 = Esp32MQTTClient_Event_Generate(msg4.c_str(), MESSAGE);
 
-        if (Esp32MQTTClient_SendEventInstance(message)) {
+        bool result = false;
+        if (Esp32MQTTClient_SendEventInstance(message1) && Esp32MQTTClient_SendEventInstance(message2) &&
+            Esp32MQTTClient_SendEventInstance(message3) && Esp32MQTTClient_SendEventInstance(message4)) {
             lastSendMicros = micros();
             logi("Message sent!", 1);
             return true;
@@ -129,7 +168,6 @@ void AzureHelper::SendConfirmationCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT res
     }
 }
 
-
 /*
  * Callback method for messages
  */
@@ -137,7 +175,6 @@ void AzureHelper::MessageCallback(const char *payLoad, int size) {
     logi("Message callback:");
     logi(payLoad, 1);
 }
-
 
 /*
  * Callback method for device twin messages
@@ -152,7 +189,6 @@ void AzureHelper::DeviceTwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const
     // Display Twin message.Serial.println(temp);
     free(temp);
 }
-
 
 /*
  * Callback method for device method
