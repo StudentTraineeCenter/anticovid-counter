@@ -1,0 +1,4 @@
+C:/Users/Jakub/Documents/PlatformIO/Projects/AntiCovidPeopleCounter/CMakeFiles/Production.dir
+C:/Users/Jakub/Documents/PlatformIO/Projects/AntiCovidPeopleCounter/CMakeFiles/Debug.dir
+C:/Users/Jakub/Documents/PlatformIO/Projects/AntiCovidPeopleCounter/CMakeFiles/ALL_BUILD.dir
+C:/Users/Jakub/Documents/PlatformIO/Projects/AntiCovidPeopleCounter/CMakeFiles/ZERO_CHECK.dir
